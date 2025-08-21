@@ -83,38 +83,34 @@ def compute_response(username, challenge):
 
 flag_found = None
 
-for username in USERS_DB:
+# for username in USERS_DB:
+#     try:
+s = socket.socket()
+s.settimeout(3)
+s.connect((HOST, PORT))
+s.sendall(b"START\n")
+recv_line(s)  # banner
+recv_line(s)  # LOGIN
+
+s.sendall(f"USERNAME|\n".encode())
+line = recv_line(s)
+# if not line.startswith("CHALLENGE|"):
+#     continue
+challenge = int(line.split("|")[1])
+response = compute_response(username, challenge)
+s.sendall(f"RESPONSE|{response}\n".encode())
+
+songs = recv_all(s).splitlines()
+s.close()
+
+for song in songs:
     try:
-        s = socket.socket()
-        s.settimeout(3)
-        s.connect((HOST, PORT))
-        s.sendall(b"START\n")
-        recv_line(s)  # banner
-        recv_line(s)  # LOGIN
-
-        s.sendall(f"USERNAME|{username}\n".encode())
-        line = recv_line(s)
-        if not line.startswith("CHALLENGE|"):
-            continue
-        challenge = int(line.split("|")[1])
-        response = compute_response(username, challenge)
-        s.sendall(f"RESPONSE|{response}\n".encode())
-
-        songs = recv_all(s).splitlines()
-        s.close()
-
-        for song in songs:
-            try:
-                decoded = base64.b64decode(song).decode()
-                print(decoded)
-                match = re.search(r'FLAG-.*', decoded)
-                if match:
-                    flag_found = match.group()
-                    print(f"FLAG FOUND for user {username}: {flag_found}")
-                    break
-            except:
-                pass
-        if flag_found:
+        decoded = base64.b64decode(song).decode()
+        print(decoded)
+        match = re.search(r'FLAG-.*', decoded)
+        if match:
+            flag_found = match.group()
+            print(f"FLAG FOUND for user {username}: {flag_found}")
             break
     except:
-        continue
+        pass
